@@ -1,11 +1,16 @@
-import { uglify } from "rollup-plugin-uglify";
+import typescript from 'rollup-plugin-typescript2';
+ 
 export default {
-    input: 'src/main.js',
-    output: {
-      file: 'apng-canvas-typescript.min.js',
-      format: 'es'
-    },
-    plugins:[
-        uglify()
-    ],
-  };
+  input: 'src/index.ts',
+  output: {
+    file: 'build/apng-canvas-du.js',
+    format: 'esm'
+  },
+  plugins: [
+    typescript({
+      libs:[
+        
+      ]
+    }),
+  ],
+};
