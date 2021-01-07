@@ -3,6 +3,7 @@ class Animation {
     width: number = 0
     height: number = 0
     numPlays: number = 0
+    actualPlays: number = 0
     playTime: number = 0
     frames = []
     rate: number = 1
@@ -14,12 +15,20 @@ class Animation {
     finished: boolean = false
     contexts: any[] = []
 
-    lastNum: number = -1 // -1 means to the end
+    endFrame: number = -1 // -1 means to the end
+    startFrame: number = 0
+    beforeHook: Function | null
+    afterHook: Function | null
 
     constructor() {
 
     }
 
+    /**
+     * 
+     * @param rate 
+     * @param frameRange 
+     */
     play(rate: number = 1, frameRange: number[] = []): void {
         if (rate > 0) this.rate = rate
         if (this.played || this.finished) return
@@ -36,15 +45,24 @@ class Animation {
      * @param frameNumber 
      */
     stop(frameNumber: number) {
-        this.rewind()
+        if (frameNumber == undefined) this.rewind()
+
     }
 
     pause() {
-
+        // this.played = false
     }
 
     start() {
 
+    }
+
+    before(func: Function) {
+        this.beforeHook = func || null
+    }
+
+    after(func: Function) {
+        this.afterHook = func || null
     }
 
     rewind() {
@@ -57,8 +75,9 @@ class Animation {
 
     setFrameNum(range: number[]): void {
         if (range.length === 0) return
-        this.fNum = range[0]
-        if (range.length > 1) this.lastNum = range[1]
+        this.startFrame = range[0]
+        this.fNum = this.startFrame
+        if (range.length > 1) this.endFrame = range[1]
     }
 
     addContext(ctx: CanvasRenderingContext2D) {
@@ -92,11 +111,14 @@ class Animation {
     }
 
     private renderFrame(now: number) {
-        let f = this.fNum++ % this.frames.length;
-        console.log(f)
+        let f = this.fNum;
+        this.fNum++;
+        if (this.fNum >= this.frames.length || (this.fNum > this.endFrame && this.endFrame != -1)) {
+            this.fNum = this.startFrame
+        }
         let frame = this.frames[f];
 
-        if (!(this.numPlays == 0 || this.fNum / this.frames.length <= this.numPlays)) {
+        if (this.numPlays != 0 && this.actualPlays > this.numPlays) {
             this.played = false;
             this.finished = true;
             return;
@@ -123,8 +145,13 @@ class Animation {
         }
 
         this.contexts.forEach((ctx) => {
-            ctx.drawImage(frame.img, frame.left, frame.top);
-        });
+            if (this.beforeHook != null || this.afterHook != null) {
+                ctx.clearRect(0, 0, this.width, this.height)
+            }
+            this.beforeHook && this.beforeHook(ctx, f)
+            ctx.drawImage(frame.img, frame.left, frame.top)
+            this.afterHook && this.afterHook(ctx, f)
+        })
 
         if (this.nextRenderTime == 0) this.nextRenderTime = now;
         while (now > this.nextRenderTime + this.playTime) this.nextRenderTime += this.playTime;

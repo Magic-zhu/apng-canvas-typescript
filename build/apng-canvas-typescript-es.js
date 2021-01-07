@@ -3,6 +3,7 @@ class Animation {
         this.width = 0;
         this.height = 0;
         this.numPlays = 0;
+        this.actualPlays = 0;
         this.playTime = 0;
         this.frames = [];
         this.rate = 1;
@@ -12,7 +13,8 @@ class Animation {
         this.played = false;
         this.finished = false;
         this.contexts = [];
-        this.lastNum = -1;
+        this.endFrame = -1;
+        this.startFrame = 0;
     }
     play(rate = 1, frameRange = []) {
         if (rate > 0)
@@ -27,11 +29,18 @@ class Animation {
         });
     }
     stop(frameNumber) {
-        this.rewind();
+        if (frameNumber == undefined)
+            this.rewind();
     }
     pause() {
     }
     start() {
+    }
+    before(func) {
+        this.beforeHook = func || null;
+    }
+    after(func) {
+        this.afterHook = func || null;
     }
     rewind() {
         this.nextRenderTime = 0;
@@ -43,9 +52,10 @@ class Animation {
     setFrameNum(range) {
         if (range.length === 0)
             return;
-        this.fNum = range[0];
+        this.startFrame = range[0];
+        this.fNum = this.startFrame;
         if (range.length > 1)
-            this.lastNum = range[1];
+            this.endFrame = range[1];
     }
     addContext(ctx) {
         if (this.contexts.length > 0) {
@@ -77,10 +87,13 @@ class Animation {
             });
     }
     renderFrame(now) {
-        let f = this.fNum++ % this.frames.length;
-        console.log(f);
+        let f = this.fNum;
+        this.fNum++;
+        if (this.fNum >= this.frames.length || (this.fNum > this.endFrame && this.endFrame != -1)) {
+            this.fNum = this.startFrame;
+        }
         let frame = this.frames[f];
-        if (!(this.numPlays == 0 || this.fNum / this.frames.length <= this.numPlays)) {
+        if (this.numPlays != 0 && this.actualPlays > this.numPlays) {
             this.played = false;
             this.finished = true;
             return;
@@ -106,7 +119,12 @@ class Animation {
             this.contexts.forEach((ctx) => { ctx.clearRect(frame.left, frame.top, frame.width, frame.height); });
         }
         this.contexts.forEach((ctx) => {
+            if (this.beforeHook != null || this.afterHook != null) {
+                ctx.clearRect(0, 0, this.width, this.height);
+            }
+            this.beforeHook && this.beforeHook(ctx, f);
             ctx.drawImage(frame.img, frame.left, frame.top);
+            this.afterHook && this.afterHook(ctx, f);
         });
         if (this.nextRenderTime == 0)
             this.nextRenderTime = now;

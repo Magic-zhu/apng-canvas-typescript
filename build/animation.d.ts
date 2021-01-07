@@ -2,6 +2,7 @@ declare class Animation {
     width: number;
     height: number;
     numPlays: number;
+    actualPlays: number;
     playTime: number;
     frames: any[];
     rate: number;
@@ -11,12 +12,17 @@ declare class Animation {
     played: boolean;
     finished: boolean;
     contexts: any[];
-    lastNum: number;
+    endFrame: number;
+    startFrame: number;
+    beforeHook: Function | null;
+    afterHook: Function | null;
     constructor();
     play(rate?: number, frameRange?: number[]): void;
     stop(frameNumber: number): void;
     pause(): void;
     start(): void;
+    before(func: Function): void;
+    after(func: Function): void;
     rewind(): void;
     setFrameNum(range: number[]): void;
     addContext(ctx: CanvasRenderingContext2D): void;

@@ -6,11 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
+        .origin {
+            width: 402.6px;
+            height: 300px;
+            border: 1px solid;
+        }
+
+        .apng-image {
+            width: 402.6px;
+            height: 300px;
+            border: 1px solid;
+        }
     </style>
 </head>
 
 <body>
-    <img src='https://cdn.poizon.com/node-common/092f87237ff71bc3b11c1b7de810d527.png' class='apng-image' />
+    <div>原始<img src='https://cdn.poizon.com/node-common/092f87237ff71bc3b11c1b7de810d527.png' class='origin' /></div>
+    <div>只播放50-70帧<img src='https://cdn.poizon.com/node-common/092f87237ff71bc3b11c1b7de810d527.png'
+            class='apng-image' /></div>
 </body>
 <script src='../build/apng-canvas-typescript-iife.js'></script>
 <script>
@@ -21,15 +34,23 @@
     //     for (var i = 0; i < images.length; i++) APNG.animateImage(images[i]);
     // }).catch(e=>{
     //     console.log('support')
-        var images = document.querySelectorAll(".apng-image");
-        for (var i = 0; i < images.length; i++){
-            apng.animateImage(images[i],false)
-            .then(anim=>{
-                // setTimeout(()=>{
-                    anim.play(1,[30])
-                // },2000)
+    var images = document.querySelectorAll(".apng-image");
+    for (var i = 0; i < images.length; i++) {
+        apng.animateImage(images[i], false)
+            .then(anim => {
+                anim.play(1, [50, 70])
+                anim.before((ctx, f) => {
+                    ctx.fillStyle = 'red'
+                    ctx.fillRect(0, 0, 100 + f * 3, 100 + f * 3)
+                })
+                anim.after((ctx, f) => {
+                    ctx.fillStyle = 'blue'
+                    ctx.fillRect(200, 200, 100 + f * 3, 100 + f * 3)
+                })
+                setTimeout(() => {
+                }, 2000)
             })
-        }
+    }
     // })
 </script>
 
