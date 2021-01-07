@@ -12,7 +12,7 @@ class Parser extends Loader {
     urlParse(url: string): Promise<any> {
         // 加载apng array buffer 并保存
         if (!(url in this.url2promise)) this.url2promise[url] = this.loadUrl(url).then((res: any) => {
-            this.parse(res)
+            return this.parse(res)
         })
         return this.url2promise[url]
     }
@@ -165,7 +165,7 @@ class Parser extends Loader {
                 headerDataBytes,
                 preDataParts,
                 postDataParts,
-                (anim: DAnimation) => {
+                (anim: Animation) => {
                     resolve(anim)
                 },
                 (err: string) => {

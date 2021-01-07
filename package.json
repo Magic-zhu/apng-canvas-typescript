@@ -22,8 +22,6 @@
   },
   "homepage": "https://github.com/Magic-zhu/apng-canvas-typescript#readme",
   "devDependencies": {
-    "@babel/core": "^7.12.10",
-    "@rollup/plugin-babel": "^5.2.2",
     "rollup-plugin-typescript2": "^0.29.0",
     "rollup-plugin-uglify": "^6.0.4",
     "typescript": "^4.1.3"

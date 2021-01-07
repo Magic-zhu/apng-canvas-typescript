@@ -12,24 +12,25 @@
 <body>
     <img src='https://cdn.poizon.com/node-common/092f87237ff71bc3b11c1b7de810d527.png' class='apng-image' />
 </body>
-<script src=''></script>
+<script src='../build/apng-canvas-typescript-iife.js'></script>
 <script>
-    APNG.ifNeeded().then(function () {
-        var images = document.querySelectorAll(".apng-image");
-        console.log('not support')
-        for (var i = 0; i < images.length; i++) APNG.animateImage(images[i]);
-    }).catch(e=>{
-        console.log('support')
+    let apng = new APNG()
+    // APNG.ifNeeded().then(function () {
+    //     var images = document.querySelectorAll(".apng-image");
+    //     console.log('not support')
+    //     for (var i = 0; i < images.length; i++) APNG.animateImage(images[i]);
+    // }).catch(e=>{
+    //     console.log('support')
         var images = document.querySelectorAll(".apng-image");
         for (var i = 0; i < images.length; i++){
-            APNG.animateImage(images[i],false)
+            apng.animateImage(images[i])
             .then(anim=>{
-                setTimeout(()=>{
-                    anim.play()
-                },2000)
+                // setTimeout(()=>{
+                //     anim.play()
+                // },2000)
             })
         }
-    })
+    // })
 </script>
 
 </html>

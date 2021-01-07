@@ -78,14 +78,17 @@ class APNG {
                 anim.play();
             };
             return Promise.resolve(anim)
-        }).catch(() => {
+        }).catch((err) => {
+            console.error(err)
             img.setAttribute("data-is-apng", "no")
         })
     }
 
-    install() {
+    static install(mot: any) {
 
     }
 }
+
+window['APNG'] = APNG
 
 export default APNG
