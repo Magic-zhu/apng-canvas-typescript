@@ -12,23 +12,26 @@ class Animation {
         this.played = false;
         this.finished = false;
         this.contexts = [];
+        this.lastNum = -1;
     }
-    play(rate) {
-        if (rate && rate > 0)
+    play(rate = 1, frameRange = []) {
+        if (rate > 0)
             this.rate = rate;
         if (this.played || this.finished)
             return;
         this.rewind();
+        this.setFrameNum(frameRange);
         this.played = true;
         requestAnimationFrame((time) => {
             this.tick(time);
         });
     }
-    stop() {
+    stop(frameNumber) {
+        this.rewind();
     }
     pause() {
     }
-    restart() {
+    start() {
     }
     rewind() {
         this.nextRenderTime = 0;
@@ -36,6 +39,13 @@ class Animation {
         this.prevF = null;
         this.played = false;
         this.finished = false;
+    }
+    setFrameNum(range) {
+        if (range.length === 0)
+            return;
+        this.fNum = range[0];
+        if (range.length > 1)
+            this.lastNum = range[1];
     }
     addContext(ctx) {
         if (this.contexts.length > 0) {
@@ -68,6 +78,7 @@ class Animation {
     }
     renderFrame(now) {
         let f = this.fNum++ % this.frames.length;
+        console.log(f);
         let frame = this.frames[f];
         if (!(this.numPlays == 0 || this.fNum / this.frames.length <= this.numPlays)) {
             this.played = false;

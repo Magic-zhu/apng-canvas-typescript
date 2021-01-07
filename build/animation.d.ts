@@ -11,12 +11,14 @@ declare class Animation {
     played: boolean;
     finished: boolean;
     contexts: any[];
+    lastNum: number;
     constructor();
-    play(rate: number): void;
-    stop(): void;
+    play(rate?: number, frameRange?: number[]): void;
+    stop(frameNumber: number): void;
     pause(): void;
-    restart(): void;
+    start(): void;
     rewind(): void;
+    setFrameNum(range: number[]): void;
     addContext(ctx: CanvasRenderingContext2D): void;
     removeContext(ctx: CanvasRenderingContext2D): void;
     private tick;

@@ -23,10 +23,10 @@
     //     console.log('support')
         var images = document.querySelectorAll(".apng-image");
         for (var i = 0; i < images.length; i++){
-            apng.animateImage(images[i])
+            apng.animateImage(images[i],false)
             .then(anim=>{
                 // setTimeout(()=>{
-                //     anim.play()
+                    anim.play(1,[30])
                 // },2000)
             })
         }

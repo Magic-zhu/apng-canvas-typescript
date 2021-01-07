@@ -14,29 +14,36 @@ class Animation {
     finished: boolean = false
     contexts: any[] = []
 
+    lastNum: number = -1 // -1 means to the end
+
     constructor() {
 
     }
 
-    play(rate: number): void {
-        if (rate && rate > 0) this.rate = rate
+    play(rate: number = 1, frameRange: number[] = []): void {
+        if (rate > 0) this.rate = rate
         if (this.played || this.finished) return
         this.rewind()
+        this.setFrameNum(frameRange)
         this.played = true
-        requestAnimationFrame((time) => {
+        requestAnimationFrame((time: number) => {
             this.tick(time)
         })
     }
 
-    stop() {
-
+    /**
+     * 
+     * @param frameNumber 
+     */
+    stop(frameNumber: number) {
+        this.rewind()
     }
 
     pause() {
 
     }
 
-    restart() {
+    start() {
 
     }
 
@@ -48,6 +55,11 @@ class Animation {
         this.finished = false;
     }
 
+    setFrameNum(range: number[]): void {
+        if (range.length === 0) return
+        this.fNum = range[0]
+        if (range.length > 1) this.lastNum = range[1]
+    }
 
     addContext(ctx: CanvasRenderingContext2D) {
         if (this.contexts.length > 0) {
@@ -72,15 +84,16 @@ class Animation {
         }
     }
 
-    private tick(now) {
+    private tick(now: number) {
         while (this.played && this.nextRenderTime <= now) this.renderFrame(now);
-        if (this.played) requestAnimationFrame((time) => {
+        if (this.played) requestAnimationFrame((time: number) => {
             this.tick(time)
         });
     }
 
-    private renderFrame(now) {
+    private renderFrame(now: number) {
         let f = this.fNum++ % this.frames.length;
+        console.log(f)
         let frame = this.frames[f];
 
         if (!(this.numPlays == 0 || this.fNum / this.frames.length <= this.numPlays)) {
