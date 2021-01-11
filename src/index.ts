@@ -7,6 +7,49 @@ class APNG {
 
     }
 
+    private checkNativeFeatures(): Promise<any> {
+        return new Promise((resolve) => {
+            let canvas = document.createElement("canvas")
+            let result = {
+                TypedArrays: ("ArrayBuffer" in global),
+                BlobURLs: ("URL" in global),
+                requestAnimationFrame: ("requestAnimationFrame" in global),
+                pageProtocol: (location.protocol == "http:" || location.protocol == "https:"),
+                canvas: ("getContext" in document.createElement("canvas")),
+                APNG: false
+            }
+            if (result.canvas) {
+                // see http://eligrey.com/blog/post/apng-feature-detection
+                let img = new Image()
+                img.onload = function () {
+                    let ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0);
+                    result.APNG = (ctx.getImageData(0, 0, 1, 1).data[3] === 0);
+                    resolve(result);
+                }
+                // frame 1 (skipped on apng-supporting browsers): [0, 0, 0, 255]
+                // frame 2: [0, 0, 0, 0]
+                img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACGFjV" +
+                    "EwAAAABAAAAAcMq2TYAAAANSURBVAiZY2BgYPgPAAEEAQB9ssjfAAAAGmZjVEwAAAAAAAAAAQAAAAEAAA" +
+                    "AAAAAAAAD6A+gBAbNU+2sAAAARZmRBVAAAAAEImWNgYGBgAAAABQAB6MzFdgAAAABJRU5ErkJggg==";
+            } else {
+                resolve(result);
+            }
+        })
+    }
+
+    isSupport(ignoreNativeAPNG: boolean) {
+        if (typeof ignoreNativeAPNG == 'undefined') ignoreNativeAPNG = false
+        return this.checkNativeFeatures()
+            .then((features) => {
+                if (features.APNG && !ignoreNativeAPNG) {
+                    return Promise.reject(false)
+                } else {
+                    return Promise.resolve(true)
+                }
+            })
+    }
+
     /**
      * @param buffer 
      * @return {Promise}
@@ -33,6 +76,7 @@ class APNG {
         img.setAttribute("data-is-apng", "progress");
         return this.parseURL(img.src).then((anim) => {
             img.setAttribute("data-is-apng", "yes")
+            if (img.style.opacity === '0') img.style.opacity = '1'
             let canvas: HTMLCanvasElement = document.createElement("canvas");
             canvas.width = anim.width;
             canvas.height = anim.height;
@@ -75,7 +119,7 @@ class APNG {
             anim.addContext(canvas.getContext("2d"));
 
             if (autoplay === true) {
-                anim.play();
+                anim.play()
             };
             return Promise.resolve(anim)
         }).catch((err) => {

@@ -1,36 +1,58 @@
+import { AnimationOptions } from './interface'
 class Animation {
 
-    width: number = 0
-    height: number = 0
-    numPlays: number = 0
-    actualPlays: number = 0
-    playTime: number = 0
-    frames = []
-    rate: number = 1
+    width: number
+    height: number
+    numPlays: number
+    actualPlays: number
+    playTime: number
+    frames: any[]
+    rate: number
 
-    nextRenderTime: number = 0
-    fNum: number = 0
-    prevF = null
-    played: boolean = false
-    finished: boolean = false
-    contexts: any[] = []
+    nextRenderTime: number
+    fNum: number
+    prevF: any
+    played: boolean
+    finished: boolean
+    contexts: any[]
 
-    endFrame: number = -1 // -1 means to the end
-    startFrame: number = 0
+    endFrame: number // -1 means to the end
+    startFrame: number
     beforeHook: Function | null
     afterHook: Function | null
+    pauseNum: number
+    manualEndNum: number
+    manualPlayNum:number
+
 
     constructor() {
-
+        this.width = 0
+        this.height = 0
+        this.numPlays = 0
+        this.actualPlays = 0
+        this.playTime = 0
+        this.frames = []
+        this.rate = 1
+        this.nextRenderTime = 0
+        this.fNum = 0
+        this.prevF = null
+        this.played = false
+        this.finished = false
+        this.contexts = []
+        this.endFrame = -1 // -1 means to the end
+        this.startFrame = 0
+        this.beforeHook = undefined
+        this.afterHook = undefined
+        this.pauseNum = 0
+        this.manualEndNum = -1
+        this.manualPlayNum = 0
     }
 
     /**
      * 
-     * @param rate 
      * @param frameRange 
      */
-    play(rate: number = 1, frameRange: number[] = []): void {
-        if (rate > 0) this.rate = rate
+    play(frameRange: number[] = []): void {
         if (this.played || this.finished) return
         this.rewind()
         this.setFrameNum(frameRange)
@@ -40,21 +62,26 @@ class Animation {
         })
     }
 
-    /**
-     * 
-     * @param frameNumber 
-     */
-    stop(frameNumber: number) {
-        if (frameNumber == undefined) this.rewind()
-
+    stop() {
+        this.rewind()
     }
 
-    pause() {
-        // this.played = false
+    pause(frameNumber?: number) {
+        if (frameNumber != undefined) {
+            this.manualEndNum = frameNumber
+            return
+        }
+        this.pauseNum = this.fNum
+        this.stop()
     }
 
-    start() {
-
+    start(frameNumber?: number) {
+        this.fNum = this.pauseNum
+        if (frameNumber != undefined) this.fNum = frameNumber
+        this.played = true
+        requestAnimationFrame((time: number) => {
+            this.tick(time)
+        })
     }
 
     before(func: Function) {
@@ -73,11 +100,16 @@ class Animation {
         this.finished = false;
     }
 
-    setFrameNum(range: number[]): void {
+    private setFrameNum(range: number[]): void {
         if (range.length === 0) return
         this.startFrame = range[0]
         this.fNum = this.startFrame
         if (range.length > 1) this.endFrame = range[1]
+    }
+
+    setOptions(options: AnimationOptions) {
+        if (options.rate !== undefined) this.rate = options.rate <= 0 ? 1 : options.rate
+        if (options.playNum !== undefined) this.manualPlayNum = options.playNum < 0 ? 0 : options.playNum
     }
 
     addContext(ctx: CanvasRenderingContext2D) {
@@ -112,16 +144,27 @@ class Animation {
 
     private renderFrame(now: number) {
         let f = this.fNum;
-        this.fNum++;
+
+        //指定停止
+        if (this.manualEndNum !== -1 && f == this.manualEndNum) {
+            this.manualEndNum = -1
+            this.pause()
+            return
+        }
+
+        this.fNum++
+
+        //播放1次
         if (this.fNum >= this.frames.length || (this.fNum > this.endFrame && this.endFrame != -1)) {
             this.fNum = this.startFrame
+            this.actualPlays++
         }
+
         let frame = this.frames[f];
 
-        if (this.numPlays != 0 && this.actualPlays > this.numPlays) {
-            this.played = false;
-            this.finished = true;
-            return;
+        if (this.manualPlayNum != 0 && this.actualPlays >= this.manualPlayNum) {
+            this.stop()
+            return
         }
 
         if (f == 0) {
@@ -129,7 +172,6 @@ class Animation {
             this.prevF = null;
             if (frame.disposeOp == 2) frame.disposeOp = 1;
         }
-
         if (this.prevF && this.prevF.disposeOp == 1) {
             this.contexts.forEach((ctx) => { ctx.clearRect(this.prevF.left, this.prevF.top, this.prevF.width, this.prevF.height); });
         } else if (this.prevF && this.prevF.disposeOp == 2) {
@@ -143,7 +185,6 @@ class Animation {
         if (frame.blendOp == 0) {
             this.contexts.forEach((ctx) => { ctx.clearRect(frame.left, frame.top, frame.width, frame.height); });
         }
-
         this.contexts.forEach((ctx) => {
             if (this.beforeHook != null || this.afterHook != null) {
                 ctx.clearRect(0, 0, this.width, this.height)

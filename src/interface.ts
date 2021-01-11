@@ -11,3 +11,8 @@ interface Frame {
 }
 
 export type FrameItem = Frame | null
+
+export interface AnimationOptions {
+    rate?: number
+    playNum?: number
+}
