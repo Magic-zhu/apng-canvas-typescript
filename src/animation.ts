@@ -1,4 +1,4 @@
-import { AnimationOptions } from './interface'
+import { AnimationOptions, HookMap } from './interface'
 class Animation {
 
     width: number
@@ -22,7 +22,11 @@ class Animation {
     afterHook: Function | null
     pauseNum: number
     manualEndNum: number
-    manualPlayNum:number
+    manualPlayNum: number
+
+    hookmap: HookMap = {
+        stop: []
+    }
 
 
     constructor() {
@@ -64,6 +68,9 @@ class Animation {
 
     stop() {
         this.rewind()
+        this.hookmap.stop.forEach((func: Function) => {
+            func()
+        })
     }
 
     pause(frameNumber?: number) {
@@ -90,6 +97,17 @@ class Animation {
 
     after(func: Function) {
         this.afterHook = func || null
+    }
+
+    on(hook: string, callback: Function) {
+        if(callback == undefined){
+           return 
+        }
+        switch (hook) {
+            case 'stop':
+                this.hookmap.stop.push(callback)
+                break
+        }
     }
 
     rewind() {

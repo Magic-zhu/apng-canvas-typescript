@@ -1,6 +1,6 @@
 
 import parser from "./parser"
-
+declare let global
 class APNG {
 
     constructor() {
