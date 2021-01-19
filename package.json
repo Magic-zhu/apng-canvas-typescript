@@ -1,8 +1,8 @@
 {
   "name": "apng-canvas-typescript",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "1.0.1",
+  "description": "A controller for animated PNG files in browsers with canvas support",
+  "main": "build/mot-pluginapng-es.js",
   "scripts": {
     "build": "rollup -c",
     "start": "rollup -c -w"
@@ -13,7 +13,10 @@
   },
   "keywords": [
     "apng",
-    "canvas"
+    "animation",
+    "animated png",
+    "canvas",
+    "typescript"
   ],
   "author": "magic-zhu",
   "license": "MIT",
@@ -25,5 +28,6 @@
     "rollup-plugin-typescript2": "^0.29.0",
     "rollup-plugin-uglify": "^6.0.4",
     "typescript": "^4.1.3"
-  }
+  },
+  "module":"./src/index.ts"
 }

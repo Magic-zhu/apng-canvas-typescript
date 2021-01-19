@@ -9,7 +9,7 @@ export default {
     },
     {
       file: 'build/apng-canvas-typescript-es.js',
-      format: 'es'
+      format: 'esm'
     }
   ],
   plugins: [

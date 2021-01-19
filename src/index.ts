@@ -3,6 +3,13 @@ import parser from "./parser"
 declare let global
 class APNG {
 
+    static installed = false
+    static pluginName = 'APNG'
+
+    on: Function
+    emit: Function
+    canYouUseCache: boolean
+
     constructor() {
 
     }
@@ -38,7 +45,7 @@ class APNG {
         })
     }
 
-    isSupport(ignoreNativeAPNG: boolean) {
+    isSupport(ignoreNativeAPNG?: boolean) {
         if (typeof ignoreNativeAPNG == 'undefined') ignoreNativeAPNG = false
         return this.checkNativeFeatures()
             .then((features) => {
@@ -74,7 +81,7 @@ class APNG {
     animateImage(img: HTMLImageElement, autoplay: boolean): Promise<any> {
         autoplay = autoplay != undefined ? autoplay : true;
         img.setAttribute("data-is-apng", "progress");
-        return this.parseURL(img.src).then((anim) => {
+        const success = (anim) => {
             img.setAttribute("data-is-apng", "yes")
             if (img.style.opacity === '0') img.style.opacity = '1'
             let canvas: HTMLCanvasElement = document.createElement("canvas");
@@ -122,14 +129,53 @@ class APNG {
                 anim.play()
             };
             return Promise.resolve(anim)
-        }).catch((err) => {
-            console.error(err)
-            img.setAttribute("data-is-apng", "no")
+        }
+        const normal = () => {
+            return this.parseURL(img.src).then((anim) => {
+                return success(anim)
+            }).catch((err) => {
+                console.error(err)
+                img.setAttribute("data-is-apng", "no")
+            })
+        }
+        //启用缓存模式
+        if (
+            img.dataset.src != undefined
+            && img.dataset.src != ''
+            && this.canYouUseCache
+        ) {
+            return this.ifHasCache(img.dataset.src)
+                .then((buffer: ArrayBuffer) => {
+                    return this.parseBuffer(buffer)
+                })
+                .then((anim) => {
+                    return success(anim)
+                })
+                .catch(() => {
+                    return normal()
+                })
+        }
+        return normal()
+    }
+
+    ifHasCache(src: string) {
+        return new Promise((resolve, reject) => {
+            this.emit('getCache', src)
+            this.on('getCacheBack', (data: any) => {
+                if (data == undefined) reject(false)
+                else resolve(data)
+            })
         })
     }
 
     static install(mot: any) {
-
+        mot.register('APNG', () => {
+            let apng = new APNG()
+            apng.on = mot.on
+            apng.emit = mot.emit
+            apng.canYouUseCache = mot.plugins.LocalCache && mot.plugins.LocalCache.installed
+            return apng
+        })
     }
 }
 

@@ -17,40 +17,74 @@
             height: 300px;
             border: 1px solid;
         }
+
+        .label{
+            width: 200px;
+            display: block;
+        }
+
+        body{
+            display: flex;
+        }
     </style>
 </head>
 
 <body>
-    <div>原始<img src='https://cdn.poizon.com/node-common/092f87237ff71bc3b11c1b7de810d527.png' class='origin' /></div>
-    <div>只播放50-70帧<img src='https://cdn.poizon.com/node-common/092f87237ff71bc3b11c1b7de810d527.png'
-            class='apng-image' /></div>
+    <div class="block">
+        <span class="label">控制</span>
+        <img 
+            class='apng-image2 apng-image'
+            src='http://cdn.magiczhu.cn/ezgif.com-gif-maker.png'
+            style="opacity: 0;"
+        />
+        <div>
+            <button id="btn3">play</button>
+            <button id="btn4">stop</button>
+            <button id="btn1">pause</button>
+            <button id="btn2">start</button>
+            <button id='btn5'>pause(20)</button>
+            <button id='btn6'>play twice</button>
+        </div>
+    </div>
+
 </body>
 <script src='../build/apng-canvas-typescript-iife.js'></script>
 <script>
     let apng = new APNG()
-    // APNG.ifNeeded().then(function () {
-    //     var images = document.querySelectorAll(".apng-image");
-    //     console.log('not support')
-    //     for (var i = 0; i < images.length; i++) APNG.animateImage(images[i]);
-    // }).catch(e=>{
-    //     console.log('support')
-    var images = document.querySelectorAll(".apng-image");
-    for (var i = 0; i < images.length; i++) {
-        apng.animateImage(images[i], false)
-            .then(anim => {
-                anim.play(1, [50, 70])
-                anim.before((ctx, f) => {
-                    ctx.fillStyle = 'red'
-                    ctx.fillRect(0, 0, 100 + f * 3, 100 + f * 3)
-                })
-                anim.after((ctx, f) => {
-                    ctx.fillStyle = 'blue'
-                    ctx.fillRect(200, 200, 100 + f * 3, 100 + f * 3)
-                })
-                setTimeout(() => {
-                }, 2000)
+    apng.isSupport()
+    .then(()=>{
+        console.log('not support')
+    })
+    .catch(()=>{
+        console.log('support')
+    })
+    var image2 = document.querySelector(".apng-image2");
+    apng.animateImage(image2, false)
+        .then(anim => {
+            anim.on('stop',()=>{
+                alert('播放完成')
             })
-    }
+            document.getElementById('btn1').addEventListener('click', () => {
+                anim.pause()
+            })
+            document.getElementById('btn2').addEventListener('click', () => {
+                anim.start()
+            })
+            document.getElementById('btn3').addEventListener('click', () => {
+                anim.play()
+            })
+            document.getElementById('btn4').addEventListener('click', () => {
+                anim.stop()
+            })
+            document.getElementById('btn5').addEventListener('click', () => {
+                anim.play()
+                anim.pause(10)
+            })
+            document.getElementById('btn6').addEventListener('click', () => {
+                anim.setOptions({playNum:2})
+                anim.play()
+            })
+        })
     // })
 </script>
 

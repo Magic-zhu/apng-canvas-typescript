@@ -1,5 +1,8 @@
 class Animation {
     constructor() {
+        this.hookmap = {
+            stop: []
+        };
         this.width = 0;
         this.height = 0;
         this.numPlays = 0;
@@ -15,10 +18,13 @@ class Animation {
         this.contexts = [];
         this.endFrame = -1;
         this.startFrame = 0;
+        this.beforeHook = undefined;
+        this.afterHook = undefined;
+        this.pauseNum = 0;
+        this.manualEndNum = -1;
+        this.manualPlayNum = 0;
     }
-    play(rate = 1, frameRange = []) {
-        if (rate > 0)
-            this.rate = rate;
+    play(frameRange = []) {
         if (this.played || this.finished)
             return;
         this.rewind();
@@ -28,19 +34,44 @@ class Animation {
             this.tick(time);
         });
     }
-    stop(frameNumber) {
-        if (frameNumber == undefined)
-            this.rewind();
+    stop() {
+        this.rewind();
+        this.hookmap.stop.forEach((func) => {
+            func();
+        });
     }
-    pause() {
+    pause(frameNumber) {
+        if (frameNumber != undefined) {
+            this.manualEndNum = frameNumber;
+            return;
+        }
+        this.pauseNum = this.fNum;
+        this.stop();
     }
-    start() {
+    start(frameNumber) {
+        this.fNum = this.pauseNum;
+        if (frameNumber != undefined)
+            this.fNum = frameNumber;
+        this.played = true;
+        requestAnimationFrame((time) => {
+            this.tick(time);
+        });
     }
     before(func) {
         this.beforeHook = func || null;
     }
     after(func) {
         this.afterHook = func || null;
+    }
+    on(hook, callback) {
+        if (callback == undefined) {
+            return;
+        }
+        switch (hook) {
+            case 'stop':
+                this.hookmap.stop.push(callback);
+                break;
+        }
     }
     rewind() {
         this.nextRenderTime = 0;
@@ -56,6 +87,12 @@ class Animation {
         this.fNum = this.startFrame;
         if (range.length > 1)
             this.endFrame = range[1];
+    }
+    setOptions(options) {
+        if (options.rate !== undefined)
+            this.rate = options.rate <= 0 ? 1 : options.rate;
+        if (options.playNum !== undefined)
+            this.manualPlayNum = options.playNum < 0 ? 0 : options.playNum;
     }
     addContext(ctx) {
         if (this.contexts.length > 0) {
@@ -88,14 +125,19 @@ class Animation {
     }
     renderFrame(now) {
         let f = this.fNum;
+        if (this.manualEndNum !== -1 && f == this.manualEndNum) {
+            this.manualEndNum = -1;
+            this.pause();
+            return;
+        }
         this.fNum++;
         if (this.fNum >= this.frames.length || (this.fNum > this.endFrame && this.endFrame != -1)) {
             this.fNum = this.startFrame;
+            this.actualPlays++;
         }
         let frame = this.frames[f];
-        if (this.numPlays != 0 && this.actualPlays > this.numPlays) {
-            this.played = false;
-            this.finished = true;
+        if (this.manualPlayNum != 0 && this.actualPlays >= this.manualPlayNum) {
+            this.stop();
             return;
         }
         if (f == 0) {
@@ -376,6 +418,47 @@ var parser = new Parser();
 class APNG {
     constructor() {
     }
+    checkNativeFeatures() {
+        return new Promise((resolve) => {
+            let canvas = document.createElement("canvas");
+            let result = {
+                TypedArrays: ("ArrayBuffer" in global),
+                BlobURLs: ("URL" in global),
+                requestAnimationFrame: ("requestAnimationFrame" in global),
+                pageProtocol: (location.protocol == "http:" || location.protocol == "https:"),
+                canvas: ("getContext" in document.createElement("canvas")),
+                APNG: false
+            };
+            if (result.canvas) {
+                let img = new Image();
+                img.onload = function () {
+                    let ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0);
+                    result.APNG = (ctx.getImageData(0, 0, 1, 1).data[3] === 0);
+                    resolve(result);
+                };
+                img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACGFjV" +
+                    "EwAAAABAAAAAcMq2TYAAAANSURBVAiZY2BgYPgPAAEEAQB9ssjfAAAAGmZjVEwAAAAAAAAAAQAAAAEAAA" +
+                    "AAAAAAAAD6A+gBAbNU+2sAAAARZmRBVAAAAAEImWNgYGBgAAAABQAB6MzFdgAAAABJRU5ErkJggg==";
+            }
+            else {
+                resolve(result);
+            }
+        });
+    }
+    isSupport(ignoreNativeAPNG) {
+        if (typeof ignoreNativeAPNG == 'undefined')
+            ignoreNativeAPNG = false;
+        return this.checkNativeFeatures()
+            .then((features) => {
+            if (features.APNG && !ignoreNativeAPNG) {
+                return Promise.reject(false);
+            }
+            else {
+                return Promise.resolve(true);
+            }
+        });
+    }
     parseBuffer(buffer) {
         return parser.parse(buffer);
     }
@@ -385,8 +468,10 @@ class APNG {
     animateImage(img, autoplay) {
         autoplay = autoplay != undefined ? autoplay : true;
         img.setAttribute("data-is-apng", "progress");
-        return this.parseURL(img.src).then((anim) => {
+        const success = (anim) => {
             img.setAttribute("data-is-apng", "yes");
+            if (img.style.opacity === '0')
+                img.style.opacity = '1';
             let canvas = document.createElement("canvas");
             canvas.width = anim.width;
             canvas.height = anim.height;
@@ -431,14 +516,54 @@ class APNG {
                 anim.play();
             }
             return Promise.resolve(anim);
-        }).catch((err) => {
-            console.error(err);
-            img.setAttribute("data-is-apng", "no");
+        };
+        const normal = () => {
+            return this.parseURL(img.src).then((anim) => {
+                return success(anim);
+            }).catch((err) => {
+                console.error(err);
+                img.setAttribute("data-is-apng", "no");
+            });
+        };
+        if (img.dataset.src != undefined
+            && img.dataset.src != ''
+            && this.canYouUseCache) {
+            return this.ifHasCache(img.dataset.src)
+                .then((buffer) => {
+                return this.parseBuffer(buffer);
+            })
+                .then((anim) => {
+                return success(anim);
+            })
+                .catch(() => {
+                return normal();
+            });
+        }
+        return normal();
+    }
+    ifHasCache(src) {
+        return new Promise((resolve, reject) => {
+            this.emit('getCache', src);
+            this.on('getCacheBack', (data) => {
+                if (data == undefined)
+                    reject(false);
+                else
+                    resolve(data);
+            });
         });
     }
     static install(mot) {
+        mot.register('APNG', () => {
+            let apng = new APNG();
+            apng.on = mot.on;
+            apng.emit = mot.emit;
+            apng.canYouUseCache = mot.plugins.LocalCache && mot.plugins.LocalCache.installed;
+            return apng;
+        });
     }
 }
+APNG.installed = false;
+APNG.pluginName = 'APNG';
 window['APNG'] = APNG;
 
 export default APNG;

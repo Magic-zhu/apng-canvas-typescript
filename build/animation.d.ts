@@ -1,3 +1,4 @@
+import { AnimationOptions, HookMap } from './interface';
 declare class Animation {
     width: number;
     height: number;
@@ -16,15 +17,21 @@ declare class Animation {
     startFrame: number;
     beforeHook: Function | null;
     afterHook: Function | null;
+    pauseNum: number;
+    manualEndNum: number;
+    manualPlayNum: number;
+    hookmap: HookMap;
     constructor();
-    play(rate?: number, frameRange?: number[]): void;
-    stop(frameNumber: number): void;
-    pause(): void;
-    start(): void;
+    play(frameRange?: number[]): void;
+    stop(): void;
+    pause(frameNumber?: number): void;
+    start(frameNumber?: number): void;
     before(func: Function): void;
     after(func: Function): void;
+    on(hook: string, callback: Function): void;
     rewind(): void;
-    setFrameNum(range: number[]): void;
+    private setFrameNum;
+    setOptions(options: AnimationOptions): void;
     addContext(ctx: CanvasRenderingContext2D): void;
     removeContext(ctx: CanvasRenderingContext2D): void;
     private tick;

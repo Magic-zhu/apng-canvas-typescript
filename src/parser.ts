@@ -9,7 +9,7 @@ class Parser extends Loader {
     //url Map
     url2promise = {}
 
-    urlParse(url: string): Promise<any> {
+    urlParse(url: string): Promise<any> {      
         // 加载apng array buffer 并保存
         if (!(url in this.url2promise)) this.url2promise[url] = this.loadUrl(url).then((res: any) => {
             return this.parse(res)
